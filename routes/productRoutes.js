@@ -80,9 +80,6 @@ router.put("/nombre/:nombre", async (req, res) => {
         }
     });
 
-    //localhost:5000/api/products/nombre/eliminar
-    //localhost:5000/api/products/id/68dc4a23effead1e40457a8d
-
     http: router.delete("/id/:id", async (req, res) => {
         try {
             const { id } = req.params;
