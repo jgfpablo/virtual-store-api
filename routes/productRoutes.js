@@ -62,6 +62,28 @@ router.put("/nombre/:nombre", async (req, res) => {
     }
 });
 
+//Editar por id
+router.put("/id/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        const updated = await Product.findByIdAndUpdate(
+            id, // le pasás directamente el _id
+            updates,
+            { new: true } // devuelve el documento ya actualizado
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Producto no encontrado" });
+        }
+
+        res.json(updated);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Eliminar producto por nombre
 router.delete("/nombre/:nombre", async (req, res) => {
     try {
