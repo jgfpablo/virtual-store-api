@@ -80,7 +80,7 @@ router.put("/nombre/:nombre", async (req, res) => {
         }
     });
 
-    http: router.delete("/id/:id", async (req, res) => {
+    router.delete("/id/:id", async (req, res) => {
         try {
             const { id } = req.params;
             console.log("ID a eliminar:", id); // depuración
