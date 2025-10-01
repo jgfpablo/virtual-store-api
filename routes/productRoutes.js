@@ -1,6 +1,5 @@
 import express from "express";
 import Product from "../models/Product.js";
-import cors from "cors";
 
 const router = express.Router();
 
