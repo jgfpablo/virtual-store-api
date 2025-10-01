@@ -1,12 +1,23 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-
 import productsRoutes from "./routes/productRoutes.js";
+import cors from "cors";
+
+const app = express();
+
+app.use(cors());
+
+app.use(
+    cors({
+        origin: "http://localhost:4200",
+    })
+);
+
+app.use(express.json());
 
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
