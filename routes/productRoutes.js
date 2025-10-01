@@ -60,39 +60,37 @@ router.put("/nombre/:nombre", async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
 
-    // Eliminar producto por nombre
-    router.delete("/nombre/:nombre", async (req, res) => {
-        try {
-            const { nombre } = req.params;
+// Eliminar producto por nombre
+router.delete("/nombre/:nombre", async (req, res) => {
+    try {
+        const { nombre } = req.params;
 
-            const deleted = await Product.findOneAndDelete({ nombre: nombre });
+        const deleted = await Product.findOneAndDelete({ nombre: nombre });
 
-            if (!deleted) {
-                return res
-                    .status(404)
-                    .json({ message: "Producto no encontrado" });
-            }
-
-            res.json({ message: "Producto eliminado correctamente", deleted });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
+        if (!deleted) {
+            return res.status(404).json({ message: "Producto no encontrado" });
         }
-    });
 
-    router.delete("/id/:id", async (req, res) => {
-        try {
-            const { id } = req.params;
-            console.log("ID a eliminar:", id); // depuración
-            const deleted = await Product.findByIdAndDelete(id);
-            if (!deleted) {
-                return res.status(404).json({ msg: "Producto no encontrado" });
-            }
-            res.json({ msg: "Producto eliminado", deleted });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
+        res.json({ message: "Producto eliminado correctamente", deleted });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar producto por id
+router.delete("/id/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await Product.findByIdAndDelete(id);
+        if (!deleted) {
+            return res.status(404).json({ msg: "Producto no encontrado" });
         }
-    });
+        res.json({ msg: "Producto eliminado", deleted });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 export default router;
