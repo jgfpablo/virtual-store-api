@@ -3,7 +3,6 @@ import Product from "../models/Product.js";
 import cors from "cors";
 
 const router = express.Router();
-app.use(cors());
 
 // GET todos los productos
 router.get("/", async (req, res) => {
