@@ -24,6 +24,28 @@ router.post("/", async (req, res) => {
     }
 });
 
+// Buscar producto por id
+router.get("/product/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 🔎 Usar findById directamente en lugar de findOne({ _id: id })
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ message: "Producto no encontrado" });
+        }
+
+        res.json(product);
+    } catch (err) {
+        // ⚠️ Si el id no tiene formato válido, lanzará un CastError de Mongoose
+        if (err.name === "CastError") {
+            return res.status(400).json({ message: "ID inválido" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Buscar producto por nombre
 router.get("/nombre/:nombre", async (req, res) => {
     try {
