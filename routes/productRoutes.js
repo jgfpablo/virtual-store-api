@@ -62,6 +62,22 @@ router.get("/nombre/:nombre", async (req, res) => {
     }
 });
 
+// Buscar producto por category
+router.get("/categoria/:categoria", async (req, res) => {
+    try {
+        const { categoria } = req.params;
+        const product = await Product.findOne({ categoria: categoria });
+
+        if (!product) {
+            return res.status(404).json({ message: "Categoria no encontrado" });
+        }
+
+        res.json(product);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Editar producto por nombre
 router.put("/nombre/:nombre", async (req, res) => {
     try {
