@@ -11,7 +11,10 @@ router.get("/", async (req, res) => {
         const skip = (page - 1) * limit;
 
         const total = await Product.countDocuments();
-        const products = await Product.find().skip(skip).limit(limit);
+        const products = await Product.find()
+            .sort({ _id: -1 })
+            .skip(skip)
+            .limit(limit);
         res.json({
             total, // total de productos
             page, // página actual
@@ -85,6 +88,7 @@ router.get("/categoria/:categoria", async (req, res) => {
         const total = await Product.countDocuments({ categoria });
 
         const product = await Product.find({ categoria: categoria })
+            .sort({ _id: -1 })
             .skip(skip)
             .limit(limit);
 
