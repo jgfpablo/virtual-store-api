@@ -66,7 +66,7 @@ router.get("/nombre/:nombre", async (req, res) => {
 router.get("/categoria/:categoria", async (req, res) => {
     try {
         const { categoria } = req.params;
-        const product = await Product.findOne({ categoria: categoria });
+        const product = await Product.find({ categoria: categoria });
 
         if (!product) {
             return res.status(404).json({ message: "Categoria no encontrado" });
