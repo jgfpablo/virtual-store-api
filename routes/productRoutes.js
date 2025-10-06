@@ -6,8 +6,17 @@ const router = express.Router();
 // GET todos los productos
 router.get("/", async (req, res) => {
     try {
-        const products = await Product.find();
-        res.json(products);
+        const page = parseInt(req.query.page) || 1; // Página actual
+        const limit = parseInt(req.query.limit) || 6; // Productos por página
+        const skip = (page - 1) * limit;
+        const products = await Product.find().skip(skip).limit(limit);
+        res.json({
+            total, // total de productos
+            page, // página actual
+            totalPages: Math.ceil(total / limit),
+            limit,
+            products, // array con los productos de esta página
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -65,14 +74,26 @@ router.get("/nombre/:nombre", async (req, res) => {
 // Buscar producto por category
 router.get("/categoria/:categoria", async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1; // página actual
+        const limit = parseInt(req.query.limit) || 6; // productos por página
+        const skip = (page - 1) * limit;
+
         const { categoria } = req.params;
-        const product = await Product.find({ categoria: categoria });
+        const product = await Product.find({ categoria: categoria })
+            .skip(skip)
+            .limit(limit);
 
         if (!product) {
             return res.status(404).json({ message: "Categoria no encontrado" });
         }
 
-        res.json(product);
+        res.json({
+            total, // total de productos
+            page, // página actual
+            totalPages: Math.ceil(total / limit),
+            limit,
+            products, // array con los productos de esta página
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
