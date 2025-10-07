@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import productsRoutes from "./routes/productRoutes.js";
+import categoriasRoutes from "./routes/categoriasRoutes.js";
 import cors from "cors";
 
 dotenv.config(); // ✅ primero, para usar process.env
@@ -23,7 +24,7 @@ app.use(express.json());
 
 // Rutas
 app.use("/api/products", productsRoutes);
-app.use("/api/categorias", productsRoutes);
+app.use("/api/categorias", categoriasRoutes);
 
 // Conexión a MongoDB y levantar servidor
 const PORT = process.env.PORT || 5000;
