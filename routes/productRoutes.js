@@ -76,7 +76,7 @@ router.get("/nombre/:nombre", async (req, res) => {
     }
 });
 
-// Buscar producto por category
+// Buscar producto por category s
 router.get("/categoria/:categoria", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
