@@ -79,31 +79,30 @@ router.get("/nombre/:nombre", async (req, res) => {
 // Buscar producto por category
 router.get("/categoria/:categoria", async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1; // página actual
-        const limit = parseInt(req.query.limit) || 6; // productos por página
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
         const skip = (page - 1) * limit;
-
         const { categoria } = req.params;
 
-        const total = await Product.countDocuments({ categoria });
+        const total = await Product.countDocuments({
+            categoria: { $regex: new RegExp(`^${categoria}$`, "i") },
+        });
 
-        const product = await Product.find({ categoria: categoria })
-            .sort({ _id: -1 })
+        const products = await Product.find({
+            categoria: { $regex: new RegExp(`^${categoria}$`, "i") },
+        })
             .skip(skip)
             .limit(limit);
 
-        if (!product) {
-            return res.status(404).json({ message: "Categoria no encontrado" });
-        }
-
         res.json({
-            total, // total de productos
-            page, // página actual
+            products,
+            total,
             totalPages: Math.ceil(total / limit),
+            page,
             limit,
-            products, // array con los productos de esta página
         });
     } catch (err) {
+        console.error("Error en /categoria:", err);
         res.status(500).json({ error: err.message });
     }
 });
