@@ -1,12 +1,11 @@
 import express from "express";
-import Product from "../models/Product.js";
-
+import Categorias from "../models/categorias";
 const router = express.Router();
 
 // GET todos los productos
 router.get("/", async (res) => {
     try {
-        const categorias = await Product.find();
+        const categorias = await Categorias.find();
         res.json({
             categorias, // array con los productos de esta página
         });
