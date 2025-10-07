@@ -23,6 +23,7 @@ app.use(express.json());
 
 // Rutas
 app.use("/api/products", productsRoutes);
+app.use("/api/categorias", productsRoutes);
 
 // Conexión a MongoDB y levantar servidor
 const PORT = process.env.PORT || 5000;
