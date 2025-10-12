@@ -7,6 +7,39 @@ function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
 
+// Buscar productos por texto (nombre)
+router.get("/search", async (req, res) => {
+    try {
+        const term = req.query.q ? String(req.query.q).trim() : "";
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
+
+        if (!term) {
+            return res
+                .status(400)
+                .json({ message: "Falta el parámetro de búsqueda" });
+        }
+
+        const regex = new RegExp(term, "i");
+
+        const total = await Product.countDocuments({
+            nombre: { $regex: regex },
+        });
+        const products = await Product.find({ nombre: { $regex: regex } })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        res.json({
+            products,
+            total,
+            totalPages: Math.ceil(total / limit),
+        });
+    } catch (error) {
+        console.error("Error buscando productos:", error);
+        res.status(500).json({ message: "Error al buscar productos" });
+    }
+});
+
 // GET todos los productos
 router.get("/", async (req, res) => {
     try {
@@ -213,38 +246,5 @@ router.delete("/id/:id", async (req, res) => {
 //         res.status(500).json({ message: "Error al buscar productos" });
 //     }
 // });
-
-// Buscar productos por texto (nombre)
-router.get("/search", async (req, res) => {
-    try {
-        const term = req.query.q ? String(req.query.q).trim() : "";
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 6;
-
-        if (!term) {
-            return res
-                .status(400)
-                .json({ message: "Falta el parámetro de búsqueda" });
-        }
-
-        const regex = new RegExp(term, "i");
-
-        const total = await Product.countDocuments({
-            nombre: { $regex: regex },
-        });
-        const products = await Product.find({ nombre: { $regex: regex } })
-            .skip((page - 1) * limit)
-            .limit(limit);
-
-        res.json({
-            products,
-            total,
-            totalPages: Math.ceil(total / limit),
-        });
-    } catch (error) {
-        console.error("Error buscando productos:", error);
-        res.status(500).json({ message: "Error al buscar productos" });
-    }
-});
 
 export default router;
