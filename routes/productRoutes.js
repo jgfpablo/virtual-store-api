@@ -186,31 +186,69 @@ router.delete("/id/:id", async (req, res) => {
     }
 });
 
+// router.get("/search", async (req, res) => {
+//     try {
+//         const term = req.query.q ? String(req.query.q) : "";
+//         const page = parseInt(String(req.query.page)) || 1;
+//         const limit = parseInt(String(req.query.limit)) || 6;
+
+//         const regex = new RegExp(escapeRegex(term), "i");
+
+//         const products = await Product.find({ nombre: { $regex: regex } })
+//             .skip((page - 1) * limit)
+//             .limit(limit);
+
+//         const total = await Product.countDocuments({
+//             nombre: { $regex: regex },
+//         });
+
+//         res.json({
+//             products,
+//             total,
+//             totalPages: Math.ceil(total / limit),
+//             currentPage: page,
+//         });
+//     } catch (error) {
+//         console.error("Error buscando productos:", error);
+//         res.status(500).json({ message: "Error al buscar productos" });
+//     }
+// });
+
+// Buscar productos por texto (nombre)
 router.get("/search", async (req, res) => {
     try {
-        const term = req.query.q ? String(req.query.q) : "";
-        const page = parseInt(String(req.query.page)) || 1;
-        const limit = parseInt(String(req.query.limit)) || 6;
+        const { q, page = 1, limit = 6 } = req.query;
 
-        const regex = new RegExp(escapeRegex(term), "i");
+        if (!q) {
+            return res
+                .status(400)
+                .json({ msg: "Debe proporcionar un término de búsqueda (q)" });
+        }
 
-        const products = await Product.find({ nombre: { $regex: regex } })
-            .skip((page - 1) * limit)
-            .limit(limit);
+        // Usamos una expresión regular para búsqueda parcial, sin importar mayúsculas/minúsculas
+        const regex = new RegExp(q, "i");
 
-        const total = await Product.countDocuments({
-            nombre: { $regex: regex },
-        });
+        const skip = (page - 1) * limit;
+
+        // Buscar productos cuyo nombre contenga el texto
+        const [products, total] = await Promise.all([
+            Product.find({ nombre: { $regex: regex } })
+                .skip(skip)
+                .limit(Number(limit)),
+            Product.countDocuments({ nombre: { $regex: regex } }),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
 
         res.json({
             products,
             total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page,
+            totalPages,
+            currentPage: Number(page),
         });
-    } catch (error) {
-        console.error("Error buscando productos:", error);
-        res.status(500).json({ message: "Error al buscar productos" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
+
 export default router;
