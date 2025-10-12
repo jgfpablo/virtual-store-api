@@ -182,16 +182,12 @@ router.delete("/id/:id", async (req, res) => {
     }
 });
 
-router.get("/buscar/:term", async (req, res) => {
+router.get("/search", async (req, res) => {
     try {
-        const { term } = req.params;
-
-        // Usamos regex para búsqueda flexible (case-insensitive)
+        const term = req.query.q || "";
         const regex = new RegExp(term, "i");
 
-        // Buscamos coincidencias en el campo 'nombre'
         const products = await Product.find({ nombre: { $regex: regex } });
-
         res.json(products);
     } catch (error) {
         console.error("Error buscando productos:", error);
