@@ -185,10 +185,27 @@ router.delete("/id/:id", async (req, res) => {
 router.get("/search", async (req, res) => {
     try {
         const term = req.query.q || "";
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
+
         const regex = new RegExp(term, "i");
 
-        const products = await Product.find({ nombre: { $regex: regex } });
-        res.json(products);
+        // Buscar productos con paginación
+        const products = await Product.find({ nombre: { $regex: regex } })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        // Contar total para calcular páginas
+        const total = await Product.countDocuments({
+            nombre: { $regex: regex },
+        });
+
+        res.json({
+            products,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+        });
     } catch (error) {
         console.error("Error buscando productos:", error);
         res.status(500).json({ message: "Error al buscar productos" });
