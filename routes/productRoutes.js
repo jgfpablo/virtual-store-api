@@ -217,37 +217,33 @@ router.delete("/id/:id", async (req, res) => {
 // Buscar productos por texto (nombre)
 router.get("/search", async (req, res) => {
     try {
-        const { q, page = 1, limit = 6 } = req.query;
+        const term = req.query.q ? String(req.query.q).trim() : "";
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
 
-        if (!q) {
+        if (!term) {
             return res
                 .status(400)
-                .json({ msg: "Debe proporcionar un término de búsqueda (q)" });
+                .json({ message: "Falta el parámetro de búsqueda" });
         }
 
-        // Usamos una expresión regular para búsqueda parcial, sin importar mayúsculas/minúsculas
-        const regex = new RegExp(q, "i");
+        const regex = new RegExp(term, "i");
 
-        const skip = (page - 1) * limit;
-
-        // Buscar productos cuyo nombre contenga el texto
-        const [products, total] = await Promise.all([
-            Product.find({ nombre: { $regex: regex } })
-                .skip(skip)
-                .limit(Number(limit)),
-            Product.countDocuments({ nombre: { $regex: regex } }),
-        ]);
-
-        const totalPages = Math.ceil(total / limit);
+        const total = await Product.countDocuments({
+            nombre: { $regex: regex },
+        });
+        const products = await Product.find({ nombre: { $regex: regex } })
+            .skip((page - 1) * limit)
+            .limit(limit);
 
         res.json({
             products,
             total,
-            totalPages,
-            currentPage: Number(page),
+            totalPages: Math.ceil(total / limit),
         });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    } catch (error) {
+        console.error("Error buscando productos:", error);
+        res.status(500).json({ message: "Error al buscar productos" });
     }
 });
 
