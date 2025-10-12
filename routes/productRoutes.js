@@ -3,6 +3,10 @@ import Product from "../models/Product.js";
 
 const router = express.Router();
 
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
+
 // GET todos los productos
 router.get("/", async (req, res) => {
     try {
@@ -184,18 +188,16 @@ router.delete("/id/:id", async (req, res) => {
 
 router.get("/search", async (req, res) => {
     try {
-        const term = req.query.q || "";
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 6;
+        const term = req.query.q ? String(req.query.q) : "";
+        const page = parseInt(String(req.query.page)) || 1;
+        const limit = parseInt(String(req.query.limit)) || 6;
 
-        const regex = new RegExp(term, "i");
+        const regex = new RegExp(escapeRegex(term), "i");
 
-        // Buscar productos con paginación
         const products = await Product.find({ nombre: { $regex: regex } })
             .skip((page - 1) * limit)
             .limit(limit);
 
-        // Contar total para calcular páginas
         const total = await Product.countDocuments({
             nombre: { $regex: regex },
         });
@@ -211,5 +213,4 @@ router.get("/search", async (req, res) => {
         res.status(500).json({ message: "Error al buscar productos" });
     }
 });
-
 export default router;
