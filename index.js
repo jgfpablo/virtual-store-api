@@ -9,10 +9,26 @@ dotenv.config(); // ✅ primero, para usar process.env
 
 const app = express();
 
-// CORS: permitir solo a tu frontend
+// ✅ Configuración de CORS
+const allowedOrigins = [
+    "http://localhost:4200", // desarrollo local
+    "https://noctura.netlify.app", // producción en Netlify
+];
+
 app.use(
     cors({
-        origin: "http://localhost:4200",
+        origin: function (origin, callback) {
+            // Permitir requests sin 'origin' (por ejemplo desde Postman)
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            } else {
+                console.log("❌ Bloqueado por CORS:", origin);
+                return callback(new Error("Not allowed by CORS"));
+            }
+        },
+        credentials: true,
     })
 );
 
@@ -22,18 +38,18 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Rutas
+// ✅ Rutas
 app.use("/api/products", productsRoutes);
 app.use("/api/categorias", categoriasRoutes);
 
-// Conexión a MongoDB y levantar servidor
+// ✅ Conexión a MongoDB y levantar servidor
 const PORT = process.env.PORT || 5000;
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => {
         console.log("✅ Conectado a MongoDB");
         app.listen(PORT, () =>
-            console.log(`Servidor corriendo en puerto ${PORT}`)
+            console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
         );
     })
     .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
