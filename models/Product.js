@@ -8,7 +8,10 @@ const productSchema = new mongoose.Schema(
         categoria: { type: String, required: true },
         colores: [String],
         images: [String],
-        tamano: [String],
+        ancho: { type: String },
+        alto: { type: String },
+        grosor: { type: String },
+        material: { type: String },
     },
     { timestamps: true }
 );
