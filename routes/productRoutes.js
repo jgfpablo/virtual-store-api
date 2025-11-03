@@ -48,10 +48,17 @@ router.get("/", async (req, res) => {
         const skip = (page - 1) * limit;
 
         const total = await Product.countDocuments();
-        const products = await Product.find()
+
+        const products = await Product.find(
+            {},
+            {
+                images: { $slice: 1 }, // 👈 solo la primera imagen
+            }
+        )
             .sort({ _id: -1 })
             .skip(skip)
             .limit(limit);
+
         res.json({
             total, // total de productos
             page, // página actual
@@ -121,12 +128,14 @@ router.get("/categoria/:categoria", async (req, res) => {
         const skip = (page - 1) * limit;
         const { categoria } = req.params;
 
-        const total = await Product.countDocuments({
+        const filtro = {
             categoria: { $regex: new RegExp(`^${categoria}$`, "i") },
-        });
+        };
 
-        const products = await Product.find({
-            categoria: { $regex: new RegExp(`^${categoria}$`, "i") },
+        const total = await Product.countDocuments(filtro);
+
+        const products = await Product.find(filtro, {
+            images: { $slice: 1 }, // 👈 solo la primera imagen
         })
             .skip(skip)
             .limit(limit);
