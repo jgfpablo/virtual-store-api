@@ -10,9 +10,7 @@ function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
 
-//
 // 📌 BÚSQUEDAS
-//
 
 router.get("/search", async (req, res) => {
     try {
@@ -109,9 +107,7 @@ router.get("/categoria/:categoria", async (req, res) => {
     }
 });
 
-//
 // 📌 LECTURA
-//
 
 router.get("/", async (req, res) => {
     try {
@@ -165,32 +161,57 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-//
 // 📌 CREACIÓN CON CLOUDINARY
-//
 
 router.post("/", upload.array("images"), async (req, res) => {
     try {
+        const { nombre, descripcion, precio } = req.body;
+        if (!nombre || !descripcion || !precio) {
+            return res
+                .status(400)
+                .json({ error: "Faltan campos obligatorios" });
+        }
+
         const imageUrls = [];
 
-        for (const file of req.files) {
-            const result = await new Promise((resolve, reject) => {
-                cloudinary.uploader
-                    .upload_stream(
-                        { resource_type: "image" },
-                        (err, result) => {
-                            if (err) reject(err);
-                            else resolve(result);
-                        }
-                    )
-                    .end(file.buffer);
-            });
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const result = await new Promise((resolve, reject) => {
+                    cloudinary.uploader
+                        .upload_stream(
+                            { resource_type: "image" },
+                            (err, result) => {
+                                if (err) reject(err);
+                                else resolve(result);
+                            }
+                        )
+                        .end(file.buffer);
+                });
 
-            imageUrls.push(result.secure_url);
+                imageUrls.push(result.secure_url);
+            }
+        }
+
+        let colores = [];
+        if (Array.isArray(req.body.colores)) {
+            colores = req.body.colores;
+        } else if (typeof req.body.colores === "string") {
+            colores = req.body.colores
+                .split(",")
+                .map((c) => c.trim())
+                .filter(Boolean);
         }
 
         const product = new Product({
-            ...req.body,
+            nombre,
+            descripcion,
+            precio,
+            categoria: req.body.categoria || "",
+            alto: req.body.alto || "",
+            ancho: req.body.ancho || "",
+            grosor: req.body.grosor || "",
+            material: req.body.material || "",
+            colores,
             images: imageUrls,
         });
 
@@ -198,13 +219,13 @@ router.post("/", upload.array("images"), async (req, res) => {
         res.status(201).json({ message: "Producto creado", product: saved });
     } catch (err) {
         console.error("❌ Error al crear producto:", err);
-        res.status(500).json({ error: "Error al crear producto" });
+        res.status(500).json({
+            error: err.message || "Error al crear producto",
+        });
     }
 });
 
-//
 // 📌 EDICIÓN
-//
 
 router.put("/nombre/:nombre", async (req, res) => {
     try {
@@ -244,9 +265,7 @@ router.put("/id/:id", async (req, res) => {
     }
 });
 
-//
 // 📌 ELIMINACIÓN
-//
 
 router.delete("/nombre/:nombre", async (req, res) => {
     try {
