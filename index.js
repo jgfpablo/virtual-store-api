@@ -4,13 +4,10 @@ import dotenv from "dotenv";
 import productsRoutes from "./routes/productRoutes.js";
 import categoriasRoutes from "./routes/categoriasRoutes.js";
 import cors from "cors";
-import compression from "compression";
 
 dotenv.config(); // ✅ primero, para usar process.env
 
 const app = express();
-
-app.use(compression());
 
 // ✅ Configuración de CORS
 const allowedOrigins = [
