@@ -1,18 +1,25 @@
 import express from "express";
 import Product from "../models/Product.js";
+import { upload } from "../middleware/upload.js";
+import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
 
+// 🔎 Utilidad para sanitizar búsquedas por texto
 function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
 
-// Buscar productos por texto (nombre)
+//
+// 📌 BÚSQUEDAS
+//
+
 router.get("/search", async (req, res) => {
     try {
         const term = req.query.q ? String(req.query.q).trim() : "";
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 6;
+        const skip = (page - 1) * limit;
 
         if (!term) {
             return res
@@ -20,19 +27,30 @@ router.get("/search", async (req, res) => {
                 .json({ message: "Falta el parámetro de búsqueda" });
         }
 
-        const regex = new RegExp(term, "i");
+        const regex = new RegExp(escapeRegex(term), "i");
 
         const total = await Product.countDocuments({
             nombre: { $regex: regex },
         });
-        const products = await Product.find({ nombre: { $regex: regex } })
-            .skip((page - 1) * limit)
-            .limit(limit);
+        const products = await Product.find(
+            { nombre: { $regex: regex } },
+            {
+                nombre: 1,
+                precio: 1,
+                descripcion: 1,
+                images: { $slice: 1 },
+            }
+        )
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
         res.json({
             products,
             total,
             totalPages: Math.ceil(total / limit),
+            page,
+            limit,
         });
     } catch (error) {
         console.error("Error buscando productos:", error);
@@ -40,79 +58,10 @@ router.get("/search", async (req, res) => {
     }
 });
 
-// GET todos los productos
-router.get("/", async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1; // Página actual
-        const limit = parseInt(req.query.limit) || 6; // Productos por página
-        const skip = (page - 1) * limit;
-
-        const total = await Product.countDocuments();
-
-        const products = await Product.find(
-            {},
-            {
-                nombre: 1,
-                precio: 1,
-                descripcion: 1,
-                images: { $slice: 1 }, // 👈 solo la primera imagen
-            }
-        )
-            .sort({ _id: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
-
-        res.json({
-            total, // total de productos
-            page, // página actual
-            totalPages: Math.ceil(total / limit),
-            limit,
-            products, // array con los productos de esta página
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST crear un producto
-router.post("/", async (req, res) => {
-    try {
-        const newProduct = new Product(req.body);
-        const saved = await newProduct.save();
-        res.status(201).json(saved);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// Buscar producto por id
-router.get("/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // 🔎 Usar findById directamente en lugar de findOne({ _id: id })
-        const product = await Product.findById(id);
-
-        if (!product) {
-            return res.status(404).json({ message: "Producto no encontrado" });
-        }
-
-        res.json(product);
-    } catch (err) {
-        // ⚠️ Si el id no tiene formato válido, lanzará un CastError de Mongoose
-        if (err.name === "CastError") {
-            return res.status(400).json({ message: "ID inválido" });
-        }
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Buscar producto por nombre
 router.get("/nombre/:nombre", async (req, res) => {
     try {
         const { nombre } = req.params;
-        const product = await Product.findOne({ nombre: nombre });
+        const product = await Product.findOne({ nombre });
 
         if (!product) {
             return res.status(404).json({ message: "Producto no encontrado" });
@@ -124,7 +73,6 @@ router.get("/nombre/:nombre", async (req, res) => {
     }
 });
 
-// Buscar producto por category s
 router.get("/categoria/:categoria", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -139,10 +87,14 @@ router.get("/categoria/:categoria", async (req, res) => {
         const total = await Product.countDocuments(filtro);
 
         const products = await Product.find(filtro, {
-            images: { $slice: 1 }, // 👈 solo la primera imagen
+            nombre: 1,
+            precio: 1,
+            descripcion: 1,
+            images: { $slice: 1 },
         })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         res.json({
             products,
@@ -157,17 +109,111 @@ router.get("/categoria/:categoria", async (req, res) => {
     }
 });
 
-// Editar producto por nombre
+//
+// 📌 LECTURA
+//
+
+router.get("/", async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6;
+        const skip = (page - 1) * limit;
+
+        const total = await Product.countDocuments();
+
+        const products = await Product.find(
+            {},
+            {
+                nombre: 1,
+                precio: 1,
+                descripcion: 1,
+                images: { $slice: 1 },
+            }
+        )
+            .sort({ _id: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        res.json({
+            products,
+            total,
+            totalPages: Math.ceil(total / limit),
+            page,
+            limit,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ message: "Producto no encontrado" });
+        }
+
+        res.json(product);
+    } catch (err) {
+        if (err.name === "CastError") {
+            return res.status(400).json({ message: "ID inválido" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//
+// 📌 CREACIÓN CON CLOUDINARY
+//
+
+router.post("/", upload.array("images"), async (req, res) => {
+    try {
+        const imageUrls = [];
+
+        for (const file of req.files) {
+            const result = await new Promise((resolve, reject) => {
+                cloudinary.uploader
+                    .upload_stream(
+                        { resource_type: "image" },
+                        (err, result) => {
+                            if (err) reject(err);
+                            else resolve(result);
+                        }
+                    )
+                    .end(file.buffer);
+            });
+
+            imageUrls.push(result.secure_url);
+        }
+
+        const product = new Product({
+            ...req.body,
+            images: imageUrls,
+        });
+
+        const saved = await product.save();
+        res.status(201).json({ message: "Producto creado", product: saved });
+    } catch (err) {
+        console.error("❌ Error al crear producto:", err);
+        res.status(500).json({ error: "Error al crear producto" });
+    }
+});
+
+//
+// 📌 EDICIÓN
+//
+
 router.put("/nombre/:nombre", async (req, res) => {
     try {
         const { nombre } = req.params;
         const updates = req.body;
 
-        const updated = await Product.findOneAndUpdate(
-            { nombre: nombre },
-            updates,
-            { new: true }
-        );
+        const updated = await Product.findOneAndUpdate({ nombre }, updates, {
+            new: true,
+        });
 
         if (!updated) {
             return res.status(404).json({ message: "Producto no encontrado" });
@@ -179,17 +225,14 @@ router.put("/nombre/:nombre", async (req, res) => {
     }
 });
 
-//Editar por id
 router.put("/id/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
 
-        const updated = await Product.findByIdAndUpdate(
-            id, // le pasás directamente el _id
-            updates,
-            { new: true } // devuelve el documento ya actualizado
-        );
+        const updated = await Product.findByIdAndUpdate(id, updates, {
+            new: true,
+        });
 
         if (!updated) {
             return res.status(404).json({ message: "Producto no encontrado" });
@@ -201,12 +244,14 @@ router.put("/id/:id", async (req, res) => {
     }
 });
 
-// Eliminar producto por nombre
+//
+// 📌 ELIMINACIÓN
+//
+
 router.delete("/nombre/:nombre", async (req, res) => {
     try {
         const { nombre } = req.params;
-
-        const deleted = await Product.findOneAndDelete({ nombre: nombre });
+        const deleted = await Product.findOneAndDelete({ nombre });
 
         if (!deleted) {
             return res.status(404).json({ message: "Producto no encontrado" });
@@ -218,46 +263,19 @@ router.delete("/nombre/:nombre", async (req, res) => {
     }
 });
 
-// Eliminar producto por id
 router.delete("/id/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const deleted = await Product.findByIdAndDelete(id);
+
         if (!deleted) {
-            return res.status(404).json({ msg: "Producto no encontrado" });
+            return res.status(404).json({ message: "Producto no encontrado" });
         }
-        res.json({ msg: "Producto eliminado", deleted });
+
+        res.json({ message: "Producto eliminado correctamente", deleted });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
-
-// router.get("/search", async (req, res) => {
-//     try {
-//         const term = req.query.q ? String(req.query.q) : "";
-//         const page = parseInt(String(req.query.page)) || 1;
-//         const limit = parseInt(String(req.query.limit)) || 6;
-
-//         const regex = new RegExp(escapeRegex(term), "i");
-
-//         const products = await Product.find({ nombre: { $regex: regex } })
-//             .skip((page - 1) * limit)
-//             .limit(limit);
-
-//         const total = await Product.countDocuments({
-//             nombre: { $regex: regex },
-//         });
-
-//         res.json({
-//             products,
-//             total,
-//             totalPages: Math.ceil(total / limit),
-//             currentPage: page,
-//         });
-//     } catch (error) {
-//         console.error("Error buscando productos:", error);
-//         res.status(500).json({ message: "Error al buscar productos" });
-//     }
-// });
 
 export default router;
