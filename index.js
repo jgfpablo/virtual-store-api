@@ -9,6 +9,9 @@ dotenv.config(); // ✅ primero, para usar process.env
 
 const app = express();
 
+const compression = require("compression");
+app.use(compression());
+
 // ✅ Configuración de CORS
 const allowedOrigins = [
     "http://localhost:4200", // desarrollo local

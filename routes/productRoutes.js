@@ -60,7 +60,8 @@ router.get("/", async (req, res) => {
         )
             .sort({ _id: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
         res.json({
             total, // total de productos
