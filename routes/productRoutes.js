@@ -52,6 +52,9 @@ router.get("/", async (req, res) => {
         const products = await Product.find(
             {},
             {
+                nombre: 1,
+                precio: 1,
+                descripcion: 1,
                 images: { $slice: 1 }, // 👈 solo la primera imagen
             }
         )
