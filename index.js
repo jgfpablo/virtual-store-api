@@ -8,7 +8,7 @@ import cors from "cors";
 import productsRoutes from "./routes/productRoutes.js";
 import categoriasRoutes from "./routes/categoriasRoutes.js";
 
-// ✅ Configuración de entorno
+// ✅ Configuración de entorno cosas
 dotenv.config();
 
 const app = express();
