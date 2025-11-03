@@ -5,33 +5,10 @@ import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
 
-// 🔎 Utilidad para sanitizar búsquedas por texto
-function escapeRegex(text) {
-    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-}
-
-// 📌 BÚSQUEDAS
-// (sin cambios en las rutas de búsqueda)
-
-// 📌 LECTURA
-// (sin cambios en las rutas de lectura)
-
-// 📌 CREACIÓN CON CLOUDINARY
 router.post("/", upload.array("images"), async (req, res) => {
     try {
         console.log("🟡 req.body:", req.body);
         console.log("🟡 req.files:", req.files);
-
-        // 🔐 Verificamos que las variables de entorno estén disponibles
-        console.log("🔐 CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY);
-        console.log(
-            "🔐 CLOUDINARY_API_SECRET:",
-            process.env.CLOUDINARY_API_SECRET
-        );
-        console.log(
-            "🔐 CLOUDINARY_CLOUD_NAME:",
-            process.env.CLOUDINARY_CLOUD_NAME
-        );
 
         const { nombre, descripcion, precio, categoria } = req.body;
         if (!nombre || !descripcion || !precio || !categoria) {
@@ -49,14 +26,8 @@ router.post("/", upload.array("images"), async (req, res) => {
                         .upload_stream(
                             { resource_type: "image" },
                             (err, result) => {
-                                if (err) {
-                                    console.error(
-                                        "❌ Error en Cloudinary:",
-                                        err
-                                    );
-                                    return reject(err);
-                                }
-                                resolve(result);
+                                if (err) reject(err);
+                                else resolve(result);
                             }
                         )
                         .end(file.buffer);
@@ -99,11 +70,5 @@ router.post("/", upload.array("images"), async (req, res) => {
         });
     }
 });
-
-// 📌 EDICIÓN
-// (sin cambios en las rutas de edición)
-
-// 📌 ELIMINACIÓN
-// (sin cambios en las rutas de eliminación)
 
 export default router;
