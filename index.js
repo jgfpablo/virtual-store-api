@@ -8,7 +8,7 @@ import cors from "cors";
 import productsRoutes from "./routes/productRoutes.js";
 import categoriasRoutes from "./routes/categoriasRoutes.js";
 
-// ✅ Configuración de entorno cosas
+// ✅ Configuración de entorno
 dotenv.config();
 
 const app = express();
@@ -22,8 +22,9 @@ const allowedOrigins = [
 app.use(
     cors({
         origin: function (origin, callback) {
-            if (!origin) return callback(null, true); // Postman, etc.
-            if (allowedOrigins.includes(origin)) return callback(null, true);
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
             console.log("❌ Bloqueado por CORS:", origin);
             return callback(new Error("Not allowed by CORS"));
         },
@@ -41,13 +42,25 @@ app.use("/api/categorias", categoriasRoutes);
 
 // ✅ Conexión a MongoDB y levantar servidor
 const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error("❌ MONGO_URI no está definida en las variables de entorno");
+    process.exit(1);
+}
 
 mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
     .then(() => {
         console.log("✅ Conectado a MongoDB");
         app.listen(PORT, () =>
             console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
         );
     })
-    .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
+    .catch((err) => {
+        console.error("❌ Error al conectar a MongoDB:", err.message);
+        process.exit(1);
+    });
